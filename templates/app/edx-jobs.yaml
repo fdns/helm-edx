@@ -1,0 +1,94 @@
+# Hook at install and upgrade to install database migrations
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}-lms-migrations"
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+    kind: lms-migration
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: lms-migration
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: {{ include "edx.fullname" . }}-lms
+        image: {{ .Values.edx.image }}
+        command: ["/bin/sh", "-c"]
+        args:
+          - >
+            python manage.py lms --settings prod.production migrate &&
+            python manage.py lms --settings prod.production migrate --database student_module_history coursewarehistoryextended &&
+            python manage.py cms --settings prod.production migrate
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: {{ include "edx.fullname" . }}-edx-config
+          mountPath: /openedx/config/
+          readOnly: true
+        - name: {{ include "edx.fullname" . }}-lms-settings
+          mountPath: /openedx/edx-platform/lms/envs/prod/
+          readOnly: true
+        - name: {{ include "edx.fullname" . }}-cms-settings
+          mountPath: /openedx/edx-platform/cms/envs/prod/
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+      volumes:
+      - name: {{ include "edx.fullname" . }}-edx-config
+        secret:
+          secretName: {{ include "edx.fullname" . }}-edx-config
+      - name: {{ include "edx.fullname" . }}-lms-settings
+        secret:
+          secretName: {{ include "edx.fullname" . }}-lms-settings
+      - name: {{ include "edx.fullname" . }}-cms-settings
+        secret:
+          secretName: {{ include "edx.fullname" . }}-cms-settings
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}-forum-migrations"
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+    kind: forum-migration
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: forum-migration
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: {{ include "edx.fullname" . }}-forum-migration
+        image: {{ .Values.forum.image }}
+        args:
+          - bundle
+          - exec
+          - rake
+          - search:initialize
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: MONGODB_HOST
+          value: mongodb
+        - name: MONGODB_PORT
+          value: "27017"

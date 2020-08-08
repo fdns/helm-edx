@@ -1,0 +1,97 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+  name: {{ include "edx.fullname" . }}-lms-worker
+spec:
+  replicas: {{ .Values.lms.worker.replicas | default 1 }}
+  selector:
+    matchLabels:  
+      {{- include "edx.selectorLabels" . | nindent 6 }}
+      kind: lms-worker
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: lms-worker
+    spec:
+      containers:
+        - name: {{ include "edx.fullname" . }}-lms
+          image: {{ .Values.edx.image }}
+          imagePullPolicy: IfNotPresent
+          command: ["python", "manage.py", "lms", "--settings=prod.production", "celery", "worker", "--concurrency={{ .Values.lms.celery }}", "--loglevel=info", "--hostname=edx.lms.core.default.%%h", "--maxtasksperchild", "100", "--queues=edx.lms.core.default,edx.lms.core.low,edx.lms.core.high,edx.lms.core.high_mem"]
+          env:
+          - name: C_FORCE_ROOT
+            value: "1"
+          ports:
+          - containerPort: 8000
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+          - name: {{ include "edx.fullname" . }}-edx-config
+            mountPath: /openedx/config/
+            readOnly: true
+          - name: {{ include "edx.fullname" . }}-lms-settings
+            mountPath: /openedx/edx-platform/lms/envs/prod/
+            readOnly: true
+      volumes:
+      - name: {{ include "edx.fullname" . }}-edx-config
+        secret:
+          secretName: {{ include "edx.fullname" . }}-edx-config
+      - name: {{ include "edx.fullname" . }}-lms-settings
+        secret:
+          secretName: {{ include "edx.fullname" . }}-lms-settings
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+  name: {{ include "edx.fullname" . }}-cms-worker
+spec:
+  replicas: {{ .Values.cms.worker.replicas | default 1 }}
+  selector:
+    matchLabels:  
+      {{- include "edx.selectorLabels" . | nindent 6 }}
+      kind: cms-worker
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: cms-worker
+    spec:
+      containers:
+        - name: {{ include "edx.fullname" . }}-cms
+          image: {{ .Values.edx.image }}
+          imagePullPolicy: IfNotPresent
+          command: ["python", "manage.py", "cms", "--settings=prod.production", "celery", "worker", "--concurrency={{ .Values.cms.celery }}", "--loglevel=info", "--hostname=edx.cms.core.default.%%h", "--maxtasksperchild", "100", "--queues=edx.cms.core.default,edx.cms.core.low,edx.cms.core.high"]
+          env:
+          - name: C_FORCE_ROOT
+            value: "1"
+          ports:
+          - containerPort: 8000
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: {{ include "edx.fullname" . }}-edx-config
+              mountPath: /openedx/config/
+              readOnly: true
+            - name: {{ include "edx.fullname" . }}-cms-settings
+              mountPath: /openedx/edx-platform/cms/envs/prod/
+              readOnly: true
+      volumes:
+      - name: {{ include "edx.fullname" . }}-edx-config
+        secret:
+          secretName: {{ include "edx.fullname" . }}-edx-config
+      - name: {{ include "edx.fullname" . }}-cms-settings
+        secret:
+          secretName: {{ include "edx.fullname" . }}-cms-settings

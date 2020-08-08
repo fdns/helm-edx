@@ -1,0 +1,81 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+  name: {{ include "edx.fullname" . }}-forum
+spec:
+  replicas: {{ .Values.forum.replicas | default 1 }}
+  selector:
+    matchLabels:  
+      {{- include "edx.selectorLabels" . | nindent 6 }}
+      kind: forum
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: forum
+    spec:
+      containers:
+      - name: {{ include "edx.fullname" . }}-forum
+        image: {{ .Values.forum.image }}
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: MONGODB_HOST
+          value: mongodb
+        - name: MONGODB_PORT
+          value: "27017"
+        - name: WORKER_PROCESSES
+          value: "1"
+        ports:
+        - containerPort: 4567
+        securityContext:
+          allowPrivilegeEscalation: false
+---
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+  name: {{ include "edx.fullname" . }}-minio
+spec:
+  replicas: {{ .Values.minio.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "edx.selectorLabels" . | nindent 6 }}
+      kind: minio
+  serviceName: minio
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: minio
+    spec:
+      containers:
+      - name: {{ include "edx.fullname" . }}-minio
+        image: {{ .Values.minio.image }}
+        args: ["server", "/data"]
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - secretRef:
+            name: {{ include "edx.fullname" . }}-minio-env
+        ports:
+        - containerPort: 9000
+        securityContext:
+          allowPrivilegeEscalation: false
+        volumeMounts:
+          - name: datastore
+            mountPath: /data
+            subPath: minio
+      volumes:
+      - name: datastore
+        persistentVolumeClaim:
+          claimName: {{ include "edx.fullname" . }}-minio-volume

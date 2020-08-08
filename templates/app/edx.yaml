@@ -1,0 +1,153 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+  name: {{ include "edx.fullname" . }}-lms
+spec:
+  replicas: {{ .Values.lms.replicas | default 1 }}
+  selector:
+    matchLabels:  
+      {{- include "edx.selectorLabels" . | nindent 6 }}
+      kind: lms
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: lms
+    spec:
+      containers:
+        - name: {{ include "edx.fullname" . }}-lms
+          image: {{ .Values.edx.image }}
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: SERVICE_VARIANT
+            value: lms
+          - name: WORKER_COUNT
+            value: "{{ .Values.lms.workers }}"
+          ports:
+            - containerPort: 8000
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /heartbeat
+              port: 8000
+              httpHeaders:
+              - name: Host
+                value: {{ .Values.lms.domain }}
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+          - name: {{ include "edx.fullname" . }}-edx-config
+            mountPath: /openedx/config/
+            readOnly: true
+          - name: {{ include "edx.fullname" . }}-lms-settings
+            mountPath: /openedx/edx-platform/lms/envs/prod/
+            readOnly: true
+      volumes:
+      - name: {{ include "edx.fullname" . }}-edx-config
+        secret:
+          secretName: {{ include "edx.fullname" . }}-edx-config
+      - name: {{ include "edx.fullname" . }}-lms-settings
+        secret:
+          secretName: {{ include "edx.fullname" . }}-lms-settings
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+  name: {{ include "edx.fullname" . }}-cms
+spec:
+  replicas: {{ .Values.cms.replicas | default 1 }}
+  selector:
+    matchLabels:  
+      {{- include "edx.selectorLabels" . | nindent 6 }}
+      kind: cms
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: cms
+    spec:
+      containers:
+        - name: {{ include "edx.fullname" . }}-cms
+          image: {{ .Values.edx.image }}
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: SERVICE_VARIANT
+            value: cms
+          - name: WORKER_COUNT
+            value: "{{ .Values.cms.workers }}"
+          ports:
+            - containerPort: 8000
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /heartbeat
+              port: 8000
+              httpHeaders:
+              - name: Host
+                value: {{ .Values.cms.domain }}
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+          - name: {{ include "edx.fullname" . }}-edx-config
+            mountPath: /openedx/config/
+            readOnly: true
+          - name: {{ include "edx.fullname" . }}-cms-settings
+            mountPath: /openedx/edx-platform/cms/envs/prod/
+            readOnly: true
+      volumes:
+      - name: {{ include "edx.fullname" . }}-edx-config
+        secret:
+          secretName: {{ include "edx.fullname" . }}-edx-config
+      - name: {{ include "edx.fullname" . }}-cms-settings
+        secret:
+          secretName: {{ include "edx.fullname" . }}-cms-settings
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+  name: {{ include "edx.fullname" . }}-edx-static
+spec:
+  replicas: 1
+  selector:
+    matchLabels:  
+      {{- include "edx.selectorLabels" . | nindent 6 }}
+      kind: edx-static
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: edx-static
+    spec:
+      containers:
+        - name: {{ include "edx.fullname" . }}-edx-static
+          image: {{ .Values.edx.static_image }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 5
+            timeoutSeconds: 10

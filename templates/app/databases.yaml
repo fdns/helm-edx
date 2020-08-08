@@ -1,0 +1,183 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "edx.fullname" . }}-elasticsearch
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:  
+      {{- include "edx.selectorLabels" . | nindent 6 }}
+      kind: elasticsearch
+  serviceName: elasticsearch
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: elasticsearch
+    spec:
+      containers:
+        - name: {{ include "edx.fullname" . }}-elasticsearch
+          image: elasticsearch:1.5.2
+          env:
+          - name: ES_JAVA_OPTS
+            value: "-Xms512m -Xmx512m"
+          - name: "cluster.name"
+            value: openedx
+          - name: "bootstrap.memory_lock"
+            value: "true"
+          ports:
+            - containerPort: 9200
+          volumeMounts:
+            - name: datastore
+              mountPath: /usr/share/elasticsearch/data
+              subPath: elasticsearch
+      volumes:
+      - name: datastore
+        persistentVolumeClaim:
+          claimName: {{ include "edx.fullname" . }}-elasticsearch-volume
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "edx.fullname" . }}-mysql
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{ include "edx.selectorLabels" . | nindent 6 }}
+      kind: mysql
+  serviceName: mysql
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: mysql
+    spec:
+      containers:
+      - name: {{ include "edx.fullname" . }}-mysql
+        image: mysql:5.6.43
+        #command: ["mysqld", "--character-set-server=utf8", "--collation-server=utf8_general_ci"]
+        envFrom:
+        - secretRef:
+            name: {{ include "edx.fullname" . }}-mysql-env
+        volumeMounts:
+          - name: datastore
+            mountPath: /var/lib/mysql
+            subPath: mysql
+          - name: migrations
+            mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: migrations
+        secret:
+          secretName: create-database
+      - name: datastore
+        persistentVolumeClaim:
+          claimName: {{ include "edx.fullname" . }}-mysql-volume
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "edx.fullname" . }}-mongodb
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "edx.selectorLabels" . | nindent 6 }}
+      kind: mongodb
+  serviceName: mongodb
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: mongodb
+    spec:
+      containers:
+        - name: {{ include "edx.fullname" . }}-mongodb
+          image: mongo:3.6.18
+          command: ["mongod", "--smallfiles", "--storageEngine", "wiredTiger", "--wiredTigerCacheSizeGB", "1", "--bind_ip_all"]
+          ports:
+            - name: mongodb
+              containerPort: 27017
+          envFrom:
+          - secretRef:
+              name: {{ include "edx.fullname" . }}-mongodb-env
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "edx.fullname" . }}-memcached
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "edx.selectorLabels" . | nindent 6 }}
+      kind: memcached
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: memcached
+    spec:
+      containers:
+        - name: {{ include "edx.fullname" . }}-memcached
+          image: memcached:1.4.38
+          ports:
+            - containerPort: 27017
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "edx.fullname" . }}-rabbitmq
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+    kind: rabbitmq
+spec:
+  selector:
+    matchLabels:
+      {{- include "edx.selectorLabels" . | nindent 6 }}
+      kind: rabbitmq
+  serviceName: rabbitmq
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+        labels:
+          {{- include "edx.selectorLabels" . | nindent 10 }}
+          kind: rabbitmq
+    spec:
+      containers:
+        - name: {{ include "edx.fullname" . }}-rabbitmq
+          image: rabbitmq:3.6.10
+          ports:
+          - containerPort: 5672
+          volumeMounts:
+            - name: datastore
+              mountPath: /var/lib/rabbitmq
+              subPath: rabbitmq
+      volumes:
+      - name: datastore
+        persistentVolumeClaim:
+          claimName: {{ include "edx.fullname" . }}-rabbitmq-volume

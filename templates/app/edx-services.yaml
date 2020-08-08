@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: forum
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+    kind: forum
+spec:
+  ports:
+    - port: 4567
+      protocol: TCP
+  selector:
+    {{- include "edx.selectorLabels" . | nindent 4 }}
+    kind: forum
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "edx.fullname" . }}-lms
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+    kind: lms
+spec:
+  ports:
+    - port: 8000
+      protocol: TCP
+  selector:
+    {{- include "edx.selectorLabels" . | nindent 4 }}
+    kind: lms
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "edx.fullname" . }}-cms
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+    kind: cms
+spec:
+  ports:
+    - port: 8000
+      protocol: TCP
+  selector:
+    {{- include "edx.selectorLabels" . | nindent 4 }}
+    kind: cms
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "edx.fullname" . }}-edx-static
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+    kind: edx-static
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+  selector:
+    {{- include "edx.selectorLabels" . | nindent 4 }}
+    kind: edx-static
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "edx.fullname" . }}-minio
+  labels:
+    {{- include "edx.labels" . | nindent 4 }}
+    kind: minio
+spec:
+  ports:
+    - port: 9000
+      protocol: TCP
+  selector:
+    {{- include "edx.selectorLabels" . | nindent 4 }}
+    kind: minio

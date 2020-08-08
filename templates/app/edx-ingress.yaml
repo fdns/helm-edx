@@ -1,0 +1,83 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: {{ include "edx.fullname" . }}-lms-ingress
+  annotations:
+    # use the shared ingress-nginx
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+    - hosts:
+      - edx.k8s.espinoza.dev
+      secretName: edx-ingress-certificate
+  rules:
+  - host: edx.k8s.espinoza.dev
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: {{ include "edx.fullname" . }}-lms
+          servicePort: 8000
+      - path: /static/
+        backend:
+          serviceName: {{ include "edx.fullname" . }}-edx-static
+          servicePort: 80
+  - host: preview.edx.k8s.espinoza.dev
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: {{ include "edx.fullname" . }}-lms
+          servicePort: 8000
+      - path: /static/
+        backend:
+          serviceName: {{ include "edx.fullname" . }}-edx-static
+          servicePort: 80
+  
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: {{ include "edx.fullname" . }}-cms-ingress
+  annotations:
+    # use the shared ingress-nginx
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+    - hosts:
+      - studio.edx.k8s.espinoza.dev
+      secretName: edx-ingress-certificate
+  rules:
+  - host: studio.edx.k8s.espinoza.dev
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: {{ include "edx.fullname" . }}-cms
+          servicePort: 8000
+      - path: /static/
+        backend:
+          serviceName: {{ include "edx.fullname" . }}-edx-static
+          servicePort: 80
+  
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: {{ include "edx.fullname" . }}-minio-ingress
+  annotations:
+    # use the shared ingress-nginx
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+    - hosts:
+      - s3.edx.k8s.espinoza.dev
+      secretName: edx-ingress-certificate
+  rules:
+  - host: s3.edx.k8s.espinoza.dev
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: {{ include "edx.fullname" . }}-minio
+          servicePort: 9000

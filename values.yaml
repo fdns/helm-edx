@@ -1,0 +1,33 @@
+name: edx-sandbox
+namespace: edx-sandbox
+
+lms:
+  replicas: "1"
+  workers: "1"
+  celery: "1"
+  domain: edx.k8s.espinoza.dev
+  worker:
+    replica: "1"
+
+cms:
+  replicas: "1"
+  workers: "1"
+  celery: "1"
+  domain: studio.edx.k8s.espinoza.dev
+  worker:
+    replica: "1"
+
+forum:
+  image: eoluchile/edx-forum:c0298c641551ae42a5c8fa9e6f63cef4318d48e6
+  replicas: "1"
+
+edx:
+  image: eoluchile/eol-edx:d6bf9d2c4196c2aaea08bbf11d45753080c0b470
+  static_image: fdns/edx-staging-static:d6bf9d2c4196c2aaea08bbf11d45753080c0b470
+labels:
+  environment: prod
+
+minio:
+  image: minio/minio@sha256:a9f0311c2f7a75c3c506546b0b7363c4194b4839faa799e04d7a4807041e070a
+
+storageClass: local-path
