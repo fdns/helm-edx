@@ -4,6 +4,8 @@ metadata:
   labels:
     {{- include "edx.labels" . | nindent 4 }}
   name: {{ include "edx.fullname" . }}-lms-worker
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: {{ .Values.lms.worker.replicas | default 1 }}
   selector:
@@ -53,6 +55,8 @@ metadata:
   labels:
     {{- include "edx.labels" . | nindent 4 }}
   name: {{ include "edx.fullname" . }}-cms-worker
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: {{ .Values.cms.worker.replicas | default 1 }}
   selector:

@@ -4,6 +4,8 @@ metadata:
   labels:
     {{- include "edx.labels" . | nindent 4 }}
   name: {{ include "edx.fullname" . }}-lms
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: {{ .Values.lms.replicas | default 1 }}
   selector:
@@ -64,6 +66,8 @@ metadata:
   labels:
     {{- include "edx.labels" . | nindent 4 }}
   name: {{ include "edx.fullname" . }}-cms
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: {{ .Values.cms.replicas | default 1 }}
   selector:
@@ -124,6 +128,8 @@ metadata:
   labels:
     {{- include "edx.labels" . | nindent 4 }}
   name: {{ include "edx.fullname" . }}-edx-static
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   selector:
