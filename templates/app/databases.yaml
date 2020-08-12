@@ -113,9 +113,14 @@ spec:
           ports:
             - name: mongodb
               containerPort: 27017
-          envFrom:
-          - secretRef:
-              name: {{ include "edx.fullname" . }}-mongodb-env
+          volumeMounts:
+            - name: datastore
+              mountPath: /data/db
+              subPath: mongodb
+      volumes:
+      - name: datastore
+        persistentVolumeClaim:
+          claimName: {{ include "edx.fullname" . }}-mongodb-volume
 ---
 apiVersion: apps/v1
 kind: Deployment
