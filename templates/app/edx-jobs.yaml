@@ -10,6 +10,8 @@ metadata:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
   template:
     metadata:
@@ -66,6 +68,8 @@ metadata:
     "helm.sh/hook": post-install
     "helm.sh/hook-weight": "0"
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
   template:
     metadata:
